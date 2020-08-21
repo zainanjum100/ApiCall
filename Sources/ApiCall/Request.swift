@@ -75,7 +75,7 @@ public class Request {
         return data as Data
     }
     
-   public func uploadData<T: Codable>(_ type: T.Type,method : HTTPMethod, imageData: Data,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true ,completion: @escaping Completion<T>){
+    public func uploadData<T: Codable>(_ type: T.Type,method : HTTPMethod, imageData: Data,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true,imageName: String ,completion: @escaping Completion<T>){
         let boundary = "Boundary-\(UUID().uuidString)"
         header.updateValue("multipart/form-data; boundary=\(boundary)", forKey: "Content-Type")
         var request = URLRequest(url: URL(string: BASE_URL + url)!)
@@ -89,7 +89,7 @@ public class Request {
             }
         }
         
-        httpBody.append(convertFileData(fieldName: "profile_pic",
+        httpBody.append(convertFileData(fieldName: imageName,
                                         fileName: "imagename.png",
                                         mimeType: "image/png",
                                         fileData: imageData,
