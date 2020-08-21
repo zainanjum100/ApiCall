@@ -89,7 +89,7 @@ public class Request {
             }
         }
         
-        httpBody.append(convertFileData(fieldName: imageName,
+        httpBody.append(convertFileData(fieldName: imageName ,
                                         fileName: "imagename.png",
                                         mimeType: "image/png",
                                         fileData: imageData,
