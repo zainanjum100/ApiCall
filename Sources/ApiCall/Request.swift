@@ -19,7 +19,8 @@ public class Request {
     
     public func requestApi<T: Codable>(_ type: T.Type,baseUrl: String? = nil,method : HTTPMethod,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true ,completion: @escaping Completion<T>){
         var request = URLRequest(url: URL(string: ((baseUrl != nil ? baseUrl : BASE_URL) ?? BASE_URL) + url)!)
-        request.allHTTPHeaderFields = Request.shared.header
+        header.updateValue("application/json", forKey: "Content-Type")
+        request.allHTTPHeaderFields = header
         request.httpMethod = method.rawValue
         if let params = params{
             let postData = (try? JSONSerialization.data(withJSONObject: params, options: .prettyPrinted))
