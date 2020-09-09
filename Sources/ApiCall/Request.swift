@@ -79,7 +79,7 @@ public class Request {
         return data as Data
     }
     
-    public func uploadData<T: Codable>(_ type: T.Type,method : HTTPMethod, imageData: Data,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true,imageName: String ,completion: @escaping Completion<T>){
+    public func uploadData<T: Codable>(_ type: T.Type,method : HTTPMethod, imageData: Data,url : String,params: [String: String]? = nil,isSnakeCase: Bool? = true,imageName: String ,completion: @escaping Completion<T>){
         if !Reachability.isConnectedToNetwork() {
             completion(.failure(ServiceError.noInternetConnection))
         }
@@ -92,7 +92,7 @@ public class Request {
         
         if let params = params{
             for (key, value) in params {
-                httpBody.appendString(convertFormField(named: key, value: value as! String, using: boundary))
+                httpBody.appendString(convertFormField(named: key, value: value, using: boundary))
             }
         }
         
