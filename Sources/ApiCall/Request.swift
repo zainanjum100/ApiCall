@@ -5,19 +5,23 @@
 //  Created by ZainAnjum on 17/08/2020.
 //  Copyright © 2020 ZainAnjum. All rights reserved.
 //
-
 import Foundation
-public typealias Completion<T> = (Result<T,Error>) -> ()
+
 public class Request {
     public static let shared = Request()
-     var BASE_URL = String()
-     var header = [String: String]()
-    public func setupVariables(baseUrl: String, header: [String: String]) {
+    var BASE_URL = String()
+    var header = [String: String]()
+    var errorModel: Codable?
+    public func setupVariables(baseUrl: String, header: [String: String], errorModel: Codable? = nil) {
         Request.shared.BASE_URL = baseUrl
         Request.shared.header = header
+        Request.shared.errorModel = errorModel
     }
     
-    public func requestApi<T: Codable>(_ type: T.Type,baseUrl: String? = nil,method : HTTPMethod,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true ,completion: @escaping Completion<T>){
+    public func requestApi<T: Codable>(_ type: T.Type,baseUrl: String? = nil,method : HTTPMethod,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true,completion: @escaping Completion<T>){
+        if !Reachability.isConnectedToNetwork() {
+            completion(.failure(ServiceError.noInternetConnection))
+        }
         var request = URLRequest(url: URL(string: ((baseUrl != nil ? baseUrl : BASE_URL) ?? BASE_URL) + url)!)
         header.updateValue("application/json", forKey: "Content-Type")
         request.allHTTPHeaderFields = header
@@ -26,6 +30,7 @@ public class Request {
             let postData = (try? JSONSerialization.data(withJSONObject: params, options: .prettyPrinted))
             request.httpBody = postData
         }
+        
         URLSession.shared.dataTask(with: request) { (data, response, error) in
             DispatchQueue.main.async {
                 guard let data = data else{return}
@@ -41,16 +46,14 @@ public class Request {
                             let JSON = try decoder.decode(type , from: data)
                             completion(.success(JSON))
                         default:
-                            let errorMessage = "Unable to parse json with status code \(httpResponse.statusCode)"
-                            let err = NSError(domain: errorMessage, code: httpResponse.statusCode, userInfo:[ NSLocalizedDescriptionKey: errorMessage]) as Error
-                            completion(.failure(err))
+                            let JSON = try decoder.decode(ErrorModel.self, from: data)
+                            completion(.failure(ServiceError.custom(JSON.errors.first?.message ?? "")))
                         }
                     }
                 } catch let err {
                     completion(.failure(err))
                 }
             }
-            
         }.resume()
         
     }
@@ -77,6 +80,9 @@ public class Request {
     }
     
     public func uploadData<T: Codable>(_ type: T.Type,method : HTTPMethod, imageData: Data,url : String,params: [String: Any]? = nil,isSnakeCase: Bool? = true,imageName: String ,completion: @escaping Completion<T>){
+        if !Reachability.isConnectedToNetwork() {
+            completion(.failure(ServiceError.noInternetConnection))
+        }
         let boundary = "Boundary-\(UUID().uuidString)"
         header.updateValue("multipart/form-data; boundary=\(boundary)", forKey: "Content-Type")
         var request = URLRequest(url: URL(string: BASE_URL + url)!)
@@ -115,41 +121,16 @@ public class Request {
                             let JSON = try decoder.decode(type , from: data)
                             completion(.success(JSON))
                         default:
-                            let errorMessage = "Unable to parse json with status code \(httpResponse.statusCode)"
-                            let err = NSError(domain: errorMessage, code: httpResponse.statusCode, userInfo:[ NSLocalizedDescriptionKey: errorMessage]) as Error
-                            completion(.failure(err))
+                            let JSON = try decoder.decode(ErrorModel.self, from: data)
+                            completion(.failure(ServiceError.custom(JSON.errors.first?.message ?? "")))
                         }
                     }
                 } catch let err {
                     completion(.failure(err))
                 }
             }
-            
         }.resume()
         
     }
     
-}
-public extension NSMutableData {
-    func appendString(_ string: String) {
-        if let data = string.data(using: .utf8) {
-            self.append(data)
-        }
-    }
-}
-public enum HTTPMethod: String{
-    case post = "POST"
-    case get = "GET"
-    case put = "PUT"
-    case delete = "DELETE"
-    case update = "UPDATE"
-}
-public extension Data {
-    var prettyPrintedJSONString: NSString? { /// NSString gives us a nice sanitized debugDescription
-        guard let object = try? JSONSerialization.jsonObject(with: self, options: []),
-            let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
-            let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
-        
-        return prettyPrintedString
-    }
 }
