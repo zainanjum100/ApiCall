@@ -46,8 +46,7 @@ public class Request {
                             let JSON = try decoder.decode(type , from: data)
                             completion(.success(JSON))
                         default:
-                            let JSON = try decoder.decode(ErrorModel.self, from: data)
-                            completion(.failure(ServiceError.custom(JSON.errors.first?.message ?? "")))
+                            completion(.failure(ServiceError.custom("Error decoding JSON")))
                         }
                     }
                 } catch let err {
