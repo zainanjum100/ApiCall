@@ -1,6 +1,5 @@
 import Foundation
 
-@available(macOS 12.0, *)
 public class Request {
     public static let shared = Request()
     var BASE_URL = String()
